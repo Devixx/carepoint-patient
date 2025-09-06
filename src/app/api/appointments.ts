@@ -47,7 +47,7 @@ export interface CreateAppointmentDto {
 // Get patient appointments
 export const getPatientAppointments = async (): Promise<{
   items: Appointment[];
-  meta: any;
+  meta: unknown;
 }> => {
   const response = await fetch(`${API_BASE}/patients/appointments`, {
     headers: getAuthHeaders(),
