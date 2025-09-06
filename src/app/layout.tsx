@@ -1,12 +1,12 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
-import { FakeAuthProvider } from "./contexts/FakeAuthContext";
 
 export const metadata: Metadata = {
   title: "CarePoint Patient Portal",
-  description: "Patient booking and health management",
+  description:
+    "Modern patient portal for booking appointments and managing health records",
+  keywords: ["healthcare", "patient portal", "appointments", "medical records"],
 };
 
 export default function RootLayout({
@@ -16,10 +16,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased bg-gray-50 text-gray-900">
-        <Providers>
-          <FakeAuthProvider>{children}</FakeAuthProvider>
-        </Providers>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

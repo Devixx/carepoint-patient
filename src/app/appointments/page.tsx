@@ -3,7 +3,7 @@
 
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import CareLoader from "@/components/ui/CareLoader";
+import CareLoader from "@/app/components/ui/CareLoader";
 import { useFakeAuth } from "../contexts/FakeAuthContext";
 
 async function fetchAppointments() {

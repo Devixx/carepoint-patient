@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useFakeAuth } from "./contexts/FakeAuthContext";
-import CareLoader from "@/components/ui/CareLoader";
+import CareLoader from "@/app/components/ui/CareLoader";
 
 export default function Home() {
   const { patient, isLoading, loginAsDemo, logout } = useFakeAuth();
