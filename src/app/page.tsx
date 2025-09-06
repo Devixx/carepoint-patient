@@ -1,67 +1,87 @@
-// src/app/page.tsx
 "use client";
 
-import Link from "next/link";
+import { useEffect } from "react";
 import { useFakeAuth } from "./contexts/FakeAuthContext";
-import CareLoader from "@/app/components/ui/CareLoader";
+import { WelcomeCard } from "./components/dashboard/WelcomeCard";
+import { QuickActions } from "./components/dashboard/QuickActions";
+import CareLoader from "./components/ui/CareLoader";
+import BottomNavigation from "./components/navigation/BottomNavigation";
+import DesktopSidebar from "./components/navigation/DesktopSidebar";
 
-export default function Home() {
-  const { patient, isLoading, loginAsDemo, logout } = useFakeAuth();
+export default function DashboardHome() {
+  const { patient, isLoading, loginAsDemo } = useFakeAuth();
 
-  if (isLoading) {
-    return <CareLoader variant="full" message="Signing in demo patient" />;
+  useEffect(() => {
+    if (!isLoading && !patient) {
+      loginAsDemo();
+    }
+  }, [isLoading, patient, loginAsDemo]);
+
+  if (isLoading || !patient) {
+    return <CareLoader variant="full" message="Loading your dashboard" />;
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-blue-600">CarePoint Patient</h1>
-        <p className="text-gray-600">
-          Use the demo login to preview the portal without real authentication.
-        </p>
+    <div className="min-h-screen bg-slate-50">
+      <DesktopSidebar />
 
-        {!patient ? (
-          <button
-            onClick={loginAsDemo}
-            className="px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
-          >
-            Login as Demo Patient
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
-              <div className="text-sm text-gray-700">
-                Logged in as{" "}
-                <span className="font-medium">
-                  {patient.firstName} {patient.lastName}
-                </span>{" "}
-                ({patient.email})
+      <div className="lg:ml-64">
+        <main className="pb-20 lg:pb-8">
+          <div className="p-4 lg:p-8 space-y-8 animate-fade-in">
+            <WelcomeCard />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <QuickActions />
               </div>
-              <button
-                onClick={logout}
-                className="px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50 text-sm"
-              >
-                Logout
-              </button>
-            </div>
 
-            <div className="flex gap-3">
-              <Link
-                href="/appointments"
-                className="inline-flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-              >
-                My Appointments
-              </Link>
-              <Link
-                href="/doctors"
-                className="inline-flex items-center px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
-              >
-                Find Doctors
-              </Link>
+              {/* Health Summary */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
+                <h3 className="text-xl font-bold text-slate-900 mb-6">
+                  Health Summary
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl">
+                    <div>
+                      <p className="text-2xl font-bold text-emerald-700">3</p>
+                      <p className="text-sm text-emerald-600">
+                        Active Prescriptions
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xl">💊</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
+                    <div>
+                      <p className="text-2xl font-bold text-blue-700">2</p>
+                      <p className="text-sm text-blue-600">
+                        Upcoming Appointments
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xl">📅</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
+                    <div>
+                      <p className="text-2xl font-bold text-purple-700">1</p>
+                      <p className="text-sm text-purple-600">New Lab Result</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xl">🔬</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        )}
+        </main>
       </div>
-    </main>
+
+      <BottomNavigation />
+    </div>
   );
 }
