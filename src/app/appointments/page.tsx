@@ -1,71 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   CalendarIcon,
   ClockIcon,
   MapPinIcon,
   VideoCameraIcon,
-  EllipsisVerticalIcon,
-  PhoneIcon,
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "../components/ui/Button";
 import CareLoader from "../components/ui/CareLoader";
 import BottomNavigation from "../components/navigation/BottomNavigation";
 import DesktopSidebar from "../components/navigation/DesktopSidebar";
-
-const mockAppointments = [
-  {
-    id: "1",
-    date: "2025-01-08",
-    time: "14:30",
-    doctor: {
-      name: "Dr. Sarah Johnson",
-      specialty: "Cardiology",
-      photo: null,
-    },
-    status: "confirmed" as const,
-    type: "In-person",
-    location: "CarePoint Medical Center",
-    reason: "Regular checkup",
-    duration: 30,
-    notes: "Please arrive 15 minutes early",
-  },
-  {
-    id: "2",
-    date: "2025-01-15",
-    time: "10:00",
-    doctor: {
-      name: "Dr. Michael Chen",
-      specialty: "Internal Medicine",
-      photo: null,
-    },
-    status: "pending" as const,
-    type: "Telehealth",
-    location: "Video call",
-    reason: "Follow-up consultation",
-    duration: 20,
-    notes: "Review lab results",
-  },
-  {
-    id: "3",
-    date: "2025-01-03",
-    time: "09:15",
-    doctor: {
-      name: "Dr. Emily Rodriguez",
-      specialty: "Dermatology",
-      photo: null,
-    },
-    status: "completed" as const,
-    type: "In-person",
-    location: "Skin Health Center",
-    reason: "Skin examination",
-    duration: 25,
-    notes: "Routine screening completed",
-  },
-];
+import {
+  usePatientAppointments,
+  useCancelAppointment,
+  useUpdateAppointment,
+} from "@/hooks/api";
 
 const statusConfig = {
   confirmed: {
@@ -84,17 +35,83 @@ const statusConfig = {
     label: "Cancelled",
     className: "bg-red-100 text-red-700 border-red-200",
   },
+  in_progress: {
+    label: "In Progress",
+    className: "bg-blue-100 text-blue-700 border-blue-200",
+  },
+  no_show: {
+    label: "No Show",
+    className: "bg-red-100 text-red-700 border-red-200",
+  },
 };
 
 export default function AppointmentsPage() {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
 
-  const upcomingAppointments = mockAppointments.filter(
-    (apt) => new Date(apt.date) >= new Date()
+  const {
+    data: appointmentsData,
+    isLoading,
+    isError,
+    error,
+  } = usePatientAppointments();
+  const cancelMutation = useCancelAppointment();
+  const updateMutation = useUpdateAppointment();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <DesktopSidebar />
+        <div className="lg:ml-64">
+          <main className="pb-20 lg:pb-8">
+            <CareLoader variant="full" message="Loading your appointments..." />
+          </main>
+        </div>
+        <BottomNavigation />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <DesktopSidebar />
+        <div className="lg:ml-64">
+          <main className="pb-20 lg:pb-8">
+            <div className="p-4 lg:p-8">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+                <h3 className="font-bold text-red-900 mb-2">
+                  Failed to load appointments
+                </h3>
+                <p className="text-red-700">
+                  {(error as any)?.message || "Please try again later"}
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+        <BottomNavigation />
+      </div>
+    );
+  }
+
+  const appointments = appointmentsData?.items || [];
+  const upcomingAppointments = appointments.filter(
+    (apt) => new Date(apt.startTime) >= new Date() && apt.status !== "cancelled"
   );
-  const pastAppointments = mockAppointments.filter(
-    (apt) => new Date(apt.date) < new Date()
+  const pastAppointments = appointments.filter(
+    (apt) => new Date(apt.startTime) < new Date() || apt.status === "cancelled"
   );
+
+  const handleCancel = async (appointmentId: string) => {
+    if (window.confirm("Are you sure you want to cancel this appointment?")) {
+      await cancelMutation.mutateAsync(appointmentId);
+    }
+  };
+
+  const handleReschedule = (appointmentId: string) => {
+    // In a real app, you'd open a reschedule modal
+    window.location.href = `/appointments/new?reschedule=${appointmentId}`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -147,6 +164,8 @@ export default function AppointmentsPage() {
                           key={appointment.id}
                           appointment={appointment}
                           showActions
+                          onCancel={handleCancel}
+                          onReschedule={handleReschedule}
                         />
                       ))
                     ) : (
@@ -158,7 +177,13 @@ export default function AppointmentsPage() {
                         <p className="text-slate-500 mb-4">
                           Book your next appointment to get started
                         </p>
-                        <Button>Book Appointment</Button>
+                        <Button
+                          onClick={() =>
+                            (window.location.href = "/appointments/new")
+                          }
+                        >
+                          Book Appointment
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -177,7 +202,10 @@ export default function AppointmentsPage() {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button className="h-20 flex-col">
+              <Button
+                className="h-20 flex-col"
+                onClick={() => (window.location.href = "/appointments/new")}
+              >
                 <CalendarIcon className="h-6 w-6 mb-2" />
                 Book New Appointment
               </Button>
@@ -185,7 +213,11 @@ export default function AppointmentsPage() {
                 <ClockIcon className="h-6 w-6 mb-2" />
                 Reschedule Existing
               </Button>
-              <Button variant="outline" className="h-20 flex-col">
+              <Button
+                variant="outline"
+                className="h-20 flex-col"
+                onClick={() => (window.location.href = "/support")}
+              >
                 <ChatBubbleLeftRightIcon className="h-6 w-6 mb-2" />
                 Contact Support
               </Button>
@@ -202,13 +234,17 @@ export default function AppointmentsPage() {
 function AppointmentCard({
   appointment,
   showActions = false,
+  onCancel,
+  onReschedule,
 }: {
   appointment: any;
   showActions?: boolean;
+  onCancel?: (id: string) => void;
+  onReschedule?: (id: string) => void;
 }) {
-  const status = statusConfig[appointment.status];
+  const status = statusConfig[appointment.status as keyof typeof statusConfig];
   const isVideo = appointment.type === "Telehealth";
-  const appointmentDate = new Date(appointment.date);
+  const appointmentDate = new Date(appointment.startTime);
   const isToday = appointmentDate.toDateString() === new Date().toDateString();
   const isTomorrow =
     appointmentDate.toDateString() ===
@@ -230,19 +266,19 @@ function AppointmentCard({
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">
-              {appointment.doctor.name.split(" ")[1][0]}
-              {appointment.doctor.name.split(" ")[2][0]}
+              {appointment.doctor?.firstName?.[0]}
+              {appointment.doctor?.lastName?.[0]}
             </span>
           </div>
 
           <div>
             <h3 className="font-bold text-slate-900">
-              {appointment.doctor.name}
+              Dr. {appointment.doctor?.firstName} {appointment.doctor?.lastName}
             </h3>
             <p className="text-blue-600 font-medium text-sm">
-              {appointment.doctor.specialty}
+              {appointment.doctor?.specialty}
             </p>
-            <p className="text-slate-600 text-sm mt-1">{appointment.reason}</p>
+            <p className="text-slate-600 text-sm mt-1">{appointment.title}</p>
           </div>
         </div>
 
@@ -268,18 +304,22 @@ function AppointmentCard({
         <div className="flex items-center gap-2">
           <ClockIcon className="h-4 w-4" />
           <span>
-            {appointment.time} ({appointment.duration} min)
+            {appointmentDate.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            })}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <MapPinIcon className="h-4 w-4" />
-          <span>{appointment.location}</span>
+          <span>{isVideo ? "Video Call" : "CarePoint Medical Center"}</span>
         </div>
       </div>
 
-      {appointment.notes && (
+      {appointment.description && (
         <div className="mb-4 p-3 bg-slate-50 rounded-lg">
-          <p className="text-sm text-slate-600">{appointment.notes}</p>
+          <p className="text-sm text-slate-600">{appointment.description}</p>
         </div>
       )}
 
@@ -288,10 +328,18 @@ function AppointmentCard({
           <Button size="sm">
             {isVideo ? "Join Video Call" : "Get Directions"}
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onReschedule?.(appointment.id)}
+          >
             Reschedule
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onCancel?.(appointment.id)}
+          >
             Cancel
           </Button>
         </div>

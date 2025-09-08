@@ -1,21 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
-import { useFakeAuth } from "./contexts/FakeAuthContext";
+import { useAuth } from "./contexts/AuthContext"; // Changed from useFakeAuth
 import { WelcomeCard } from "./components/dashboard/WelcomeCard";
 import { QuickActions } from "./components/dashboard/QuickActions";
 import CareLoader from "./components/ui/CareLoader";
 import BottomNavigation from "./components/navigation/BottomNavigation";
 import DesktopSidebar from "./components/navigation/DesktopSidebar";
+import AuthGuard from "./components/auth/AuthGuard";
 
-export default function DashboardHome() {
-  const { patient, isLoading, loginAsDemo } = useFakeAuth();
-
-  useEffect(() => {
-    if (!isLoading && !patient) {
-      loginAsDemo();
-    }
-  }, [isLoading, patient, loginAsDemo]);
+function DashboardContent() {
+  const { patient, isLoading } = useAuth();
 
   if (isLoading || !patient) {
     return <CareLoader variant="full" message="Loading your dashboard" />;
@@ -83,5 +78,13 @@ export default function DashboardHome() {
 
       <BottomNavigation />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
   );
 }

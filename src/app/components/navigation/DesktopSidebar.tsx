@@ -10,97 +10,67 @@ import {
   UserIcon,
   HeartIcon,
 } from "@heroicons/react/24/outline";
-import {
-  HomeIcon as HomeIconSolid,
-  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
-  CalendarIcon as CalendarIconSolid,
-  DocumentTextIcon as DocumentTextIconSolid,
-  UserIcon as UserIconSolid,
-} from "@heroicons/react/24/solid";
-import { useFakeAuth } from "../../contexts/FakeAuthContext";
+import { useAuth } from "../../contexts/AuthContext"; // Changed from useFakeAuth
 
 const navigation = [
-  { name: "Home", href: "/", icon: HomeIcon, activeIcon: HomeIconSolid },
-  {
-    name: "Find Care",
-    href: "/find-care",
-    icon: MagnifyingGlassIcon,
-    activeIcon: MagnifyingGlassIconSolid,
-  },
-  {
-    name: "Appointments",
-    href: "/appointments",
-    icon: CalendarIcon,
-    activeIcon: CalendarIconSolid,
-  },
-  {
-    name: "Health Records",
-    href: "/records",
-    icon: DocumentTextIcon,
-    activeIcon: DocumentTextIconSolid,
-  },
-  {
-    name: "Profile",
-    href: "/profile",
-    icon: UserIcon,
-    activeIcon: UserIconSolid,
-  },
+  { name: "Home", href: "/", icon: HomeIcon },
+  { name: "Find Care", href: "/find-care", icon: MagnifyingGlassIcon },
+  { name: "Appointments", href: "/appointments", icon: CalendarIcon },
+  { name: "Health Records", href: "/records", icon: DocumentTextIcon },
+  { name: "Profile", href: "/profile", icon: UserIcon },
 ];
 
 export default function DesktopSidebar() {
   const pathname = usePathname();
-  const { patient, logout } = useFakeAuth();
+  const { patient, logout } = useAuth(); // Changed from useFakeAuth
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-surface border-r border-border">
-      <div className="flex flex-col flex-1 min-h-0">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-slate-200">
+      <div className="flex flex-col flex-1">
         {/* Logo */}
-        <div className="flex items-center h-16 px-6 border-b border-border">
-          <HeartIcon className="h-8 w-8 text-brand-blue" />
-          <span className="ml-2 text-xl font-bold text-gradient">
+        <div className="flex items-center h-16 px-6 border-b border-slate-200">
+          <HeartIcon className="h-8 w-8 text-blue-600" />
+          <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
             CarePoint
           </span>
         </div>
 
         {/* Patient Info */}
         {patient && (
-          <div className="px-6 py-4 border-b border-border">
+          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
             <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-brand-blue rounded-full flex items-center justify-center">
-                <span className="text-white font-medium">
+              <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium text-sm">
                   {patient.firstName[0]}
                   {patient.lastName[0]}
                 </span>
               </div>
-              <div className="ml-3 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">
+              <div className="ml-3">
+                <p className="text-sm font-medium text-slate-900">
                   {patient.firstName} {patient.lastName}
                 </p>
-                <p className="text-xs text-text-subtle truncate">
-                  Patient Portal
-                </p>
+                <p className="text-xs text-slate-500">Patient Portal</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="flex-1 px-4 py-6 space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
-            const Icon = isActive ? item.activeIcon : item.icon;
 
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus-ring ${
+                className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
                   isActive
-                    ? "bg-brand-blue text-white"
-                    : "text-text-secondary hover:text-text-primary hover:bg-surface-accent"
+                    ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 ml-0 pl-2"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                <Icon className="flex-shrink-0 w-5 h-5 mr-3" />
+                <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
                 {item.name}
               </Link>
             );
@@ -108,14 +78,16 @@ export default function DesktopSidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-border">
+        <div className="px-4 py-4 border-t border-slate-200">
           <button
             onClick={logout}
-            className="w-full text-left px-3 py-2 text-sm text-text-subtle hover:text-text-primary hover:bg-surface-accent rounded-lg transition-colors duration-200 focus-ring"
+            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors duration-200"
           >
             Sign Out
           </button>
-          <p className="mt-2 px-3 text-xs text-text-muted">CarePoint v2.0</p>
+          <p className="mt-2 px-3 text-xs text-slate-400">
+            CarePoint Patient v1.0
+          </p>
         </div>
       </div>
     </aside>

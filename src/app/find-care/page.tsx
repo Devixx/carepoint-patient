@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -15,6 +14,7 @@ import { Button } from "../components/ui/Button";
 import CareLoader from "../components/ui/CareLoader";
 import BottomNavigation from "../components/navigation/BottomNavigation";
 import DesktopSidebar from "../components/navigation/DesktopSidebar";
+import { useDoctors } from "@/hooks/api";
 
 const specialties = [
   "All Specialties",
@@ -27,65 +27,56 @@ const specialties = [
   "Psychiatry",
 ];
 
-const mockDoctors = [
-  {
-    id: "1",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    specialty: "Cardiology",
-    rating: 4.9,
-    reviewCount: 127,
-    experience: "15+ years",
-    photo: null,
-    nextAvailable: "Tomorrow 2:30 PM",
-    location: "CarePoint Medical Center",
-    acceptsVideo: true,
-    languages: ["English", "French"],
-  },
-  {
-    id: "2",
-    firstName: "Michael",
-    lastName: "Chen",
-    specialty: "Internal Medicine",
-    rating: 4.8,
-    reviewCount: 89,
-    experience: "12+ years",
-    photo: null,
-    nextAvailable: "Today 4:15 PM",
-    location: "Downtown Clinic",
-    acceptsVideo: true,
-    languages: ["English", "Mandarin"],
-  },
-  {
-    id: "3",
-    firstName: "Emily",
-    lastName: "Rodriguez",
-    specialty: "Dermatology",
-    rating: 4.9,
-    reviewCount: 203,
-    experience: "18+ years",
-    photo: null,
-    nextAvailable: "Mon 9:00 AM",
-    location: "Skin Health Center",
-    acceptsVideo: false,
-    languages: ["English", "Spanish"],
-  },
-];
-
 export default function FindCarePage() {
   const [selectedSpecialty, setSelectedSpecialty] = useState("All Specialties");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredDoctors = mockDoctors.filter((doctor) => {
-    const matchesSpecialty =
-      selectedSpecialty === "All Specialties" ||
-      doctor.specialty === selectedSpecialty;
-    const matchesSearch =
-      doctor.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSpecialty && matchesSearch;
+  const {
+    data: doctors = [],
+    isLoading,
+    isError,
+    error,
+  } = useDoctors({
+    specialty: selectedSpecialty,
+    search: searchQuery,
   });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <DesktopSidebar />
+        <div className="lg:ml-64">
+          <main className="pb-20 lg:pb-8">
+            <CareLoader variant="full" message="Finding doctors for you..." />
+          </main>
+        </div>
+        <BottomNavigation />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <DesktopSidebar />
+        <div className="lg:ml-64">
+          <main className="pb-20 lg:pb-8">
+            <div className="p-4 lg:p-8">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+                <h3 className="font-bold text-red-900 mb-2">
+                  Failed to load doctors
+                </h3>
+                <p className="text-red-700">
+                  {(error as any)?.message || "Please try again later"}
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+        <BottomNavigation />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -138,7 +129,7 @@ export default function FindCarePage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900">
-                  {filteredDoctors.length} doctors available
+                  {doctors.length} doctors available
                 </h2>
                 <select className="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                   <option>Sort by availability</option>
@@ -148,89 +139,105 @@ export default function FindCarePage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {filteredDoctors.map((doctor) => (
-                  <div
-                    key={doctor.id}
-                    className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-shadow duration-200"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold text-lg">
-                          {doctor.firstName[0]}
-                          {doctor.lastName[0]}
-                        </span>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className="text-lg font-bold text-slate-900">
-                              Dr. {doctor.firstName} {doctor.lastName}
-                            </h3>
-                            <p className="text-blue-600 font-medium">
-                              {doctor.specialty}
-                            </p>
-                          </div>
-                          {doctor.acceptsVideo && (
-                            <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 rounded-full">
-                              <VideoCameraIcon className="h-3 w-3 text-emerald-600" />
-                              <span className="text-xs text-emerald-600 font-medium">
-                                Video
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-4 mb-3">
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <StarIconSolid
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < Math.floor(doctor.rating)
-                                    ? "text-yellow-400"
-                                    : "text-slate-200"
-                                }`}
-                              />
-                            ))}
-                            <span className="text-sm font-medium text-slate-700 ml-1">
-                              {doctor.rating} ({doctor.reviewCount} reviews)
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 text-sm text-slate-600 mb-4">
-                          <div className="flex items-center gap-2">
-                            <ClockIcon className="h-4 w-4" />
-                            <span>{doctor.experience} experience</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <MapPinIcon className="h-4 w-4" />
-                            <span>{doctor.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4 text-emerald-500" />
-                            <span className="text-emerald-600 font-medium">
-                              Next: {doctor.nextAvailable}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <Button className="flex-1">Book Appointment</Button>
-                          <Button variant="outline">View Profile</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                {doctors.map((doctor) => (
+                  <DoctorCard key={doctor.id} doctor={doctor} />
                 ))}
               </div>
+
+              {doctors.length === 0 && (
+                <div className="text-center py-12">
+                  <MagnifyingGlassIcon className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">
+                    No doctors found
+                  </h3>
+                  <p className="text-slate-500">
+                    Try adjusting your search criteria
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </main>
       </div>
 
       <BottomNavigation />
+    </div>
+  );
+}
+
+function DoctorCard({ doctor }: { doctor: any }) {
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-shadow duration-200">
+      <div className="flex items-start gap-4">
+        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-bold text-lg">
+            {doctor.firstName?.[0]}
+            {doctor.lastName?.[0]}
+          </span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Dr. {doctor.firstName} {doctor.lastName}
+              </h3>
+              <p className="text-blue-600 font-medium">{doctor.specialty}</p>
+            </div>
+            {doctor.acceptsVideo && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 rounded-full">
+                <VideoCameraIcon className="h-3 w-3 text-emerald-600" />
+                <span className="text-xs text-emerald-600 font-medium">
+                  Video
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 mb-3">
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <StarIconSolid
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < Math.floor(4.8) ? "text-yellow-400" : "text-slate-200"
+                  }`}
+                />
+              ))}
+              <span className="text-sm font-medium text-slate-700 ml-1">
+                4.8 (89 reviews)
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-sm text-slate-600 mb-4">
+            <div className="flex items-center gap-2">
+              <ClockIcon className="h-4 w-4" />
+              <span>{doctor.workingHours || "9:00 AM - 5:00 PM"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPinIcon className="h-4 w-4" />
+              <span>CarePoint Medical Center</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-emerald-500" />
+              <span className="text-emerald-600 font-medium">
+                Available today
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              className="flex-1"
+              onClick={() => (window.location.href = "/appointments/new")}
+            >
+              Book Appointment
+            </Button>
+            <Button variant="outline">View Profile</Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
