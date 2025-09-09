@@ -17,10 +17,11 @@ import {
 import { Button } from "../components/ui/Button";
 import BottomNavigation from "../components/navigation/BottomNavigation";
 import DesktopSidebar from "../components/navigation/DesktopSidebar";
-import { useFakeAuth } from "../contexts/FakeAuthContext";
+// import { useFakeAuth } from "../contexts/FakeAuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function ProfilePage() {
-  const { patient, logout } = useFakeAuth();
+  const { patient, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
 
   const profileData = {

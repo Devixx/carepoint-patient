@@ -7,10 +7,11 @@ import {
   MapPinIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "../ui/Button";
-import { useFakeAuth } from "../../contexts/FakeAuthContext";
+// import { useFakeAuth } from "../../contexts/FakeAuthContext";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export function WelcomeCard() {
-  const { patient } = useFakeAuth();
+  const { patient } = useAuth();
   const [showDetails, setShowDetails] = useState(false);
 
   const nextAppointment = {
