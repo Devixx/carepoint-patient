@@ -1,5 +1,11 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+let globalAuthHandler: ((reason?: string) => void) | null = null;
+
+export const setGlobalAuthHandler = (handler: (reason?: string) => void) => {
+  globalAuthHandler = handler;
+};
+
 class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {
     super(message);
@@ -11,12 +17,23 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Public endpoints that don't need authentication
+  const publicEndpoints = [
+    "/auth/patients/login",
+    "/auth/patients/register",
+    "/doctors",
+  ];
+
+  const isPublicEndpoint = publicEndpoints.some((publicEndpoint) =>
+    endpoint.startsWith(publicEndpoint)
+  );
+
   const token = localStorage.getItem("patient-token");
 
-  // Debug logs
   console.log("🌐 API Request:", {
     url: `${API_BASE_URL}${endpoint}`,
     method: options.method || "GET",
+    isPublic: isPublicEndpoint,
     hasToken: !!token,
     tokenPreview: token ? `${token.substring(0, 20)}...` : null,
   });
@@ -26,8 +43,8 @@ async function apiRequest<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  // Add authorization header if token exists
-  if (token) {
+  // Add authorization header for protected endpoints
+  if (!isPublicEndpoint && token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
@@ -36,10 +53,7 @@ async function apiRequest<T>(
     headers,
   };
 
-  console.log("📤 Request config:", {
-    headers: headers,
-    method: config.method || "GET",
-  });
+  console.log("📤 Request headers:", headers);
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
@@ -66,10 +80,20 @@ async function apiRequest<T>(
         data: errorData,
       });
 
-      // Handle 401 specifically for token issues
-      if (response.status === 401) {
-        console.warn("🔑 Authentication failed - clearing token");
+      // Handle authentication errors for protected endpoints
+      if (response.status === 401 && !isPublicEndpoint) {
+        console.warn("🔑 Authentication failed - triggering auth handler");
         localStorage.removeItem("patient-token");
+
+        if (globalAuthHandler) {
+          const message =
+            errorData?.message === "Unauthorized"
+              ? "Your session has expired. Please sign in again."
+              : errorData?.message ||
+                "Authentication failed. Please sign in again.";
+
+          setTimeout(() => globalAuthHandler!(message), 0);
+        }
       }
 
       throw new ApiError(
@@ -82,12 +106,12 @@ async function apiRequest<T>(
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       const data = await response.json();
-      console.log("✅ API Success:", data);
+      console.log("✅ API Success:", { hasData: !!data });
       return data;
     }
 
     const textData = await response.text();
-    console.log("✅ API Success (text):", textData);
+    console.log("✅ API Success (text)");
     return textData as T;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -99,11 +123,10 @@ async function apiRequest<T>(
   }
 }
 
-// API functions
 export const api = {
   // Auth endpoints
   login: async (credentials: { email: string; password: string }) => {
-    console.log("🔐 Attempting login for:", credentials.email);
+    console.log("🔐 API: Attempting login for:", credentials.email);
 
     const response = await apiRequest<{ token: string; user: any }>(
       "/auth/patients/login",
@@ -113,10 +136,21 @@ export const api = {
       }
     );
 
-    // Store token after successful login
+    console.log("📥 API: Login response received:", {
+      hasToken: !!response.token,
+      hasUser: !!response.user,
+      userEmail: response.user?.email,
+    });
+
     if (response.token) {
       localStorage.setItem("patient-token", response.token);
-      console.log("💾 Token stored successfully");
+      console.log("💾 API: Token stored in localStorage");
+
+      // Verify it was actually saved
+      const verification = localStorage.getItem("patient-token");
+      console.log("🔍 API: Token verification after save:", !!verification);
+    } else {
+      console.error("❌ API: No token in response!");
     }
 
     return response;
@@ -133,7 +167,7 @@ export const api = {
     emergencyContact?: string;
     emergencyPhone?: string;
   }) => {
-    console.log("📝 Attempting registration for:", data.email);
+    console.log("📝 API: Attempting registration for:", data.email);
 
     const response = await apiRequest<{ token: string; user: any }>(
       "/auth/patients/register",
@@ -143,45 +177,27 @@ export const api = {
       }
     );
 
-    // Store token after successful registration
+    console.log("📥 API: Registration response received:", {
+      hasToken: !!response.token,
+      hasUser: !!response.user,
+      userEmail: response.user?.email,
+    });
+
     if (response.token) {
       localStorage.setItem("patient-token", response.token);
-      console.log("💾 Token stored after registration");
+      console.log("💾 API: Token stored in localStorage after registration");
+
+      // Verify it was actually saved
+      const verification = localStorage.getItem("patient-token");
+      console.log("🔍 API: Token verification after save:", !!verification);
+    } else {
+      console.error("❌ API: No token in registration response!");
     }
 
     return response;
   },
 
-  // Doctors endpoints
-  getDoctors: async (params?: { specialty?: string; search?: string }) => {
-    const searchParams = new URLSearchParams();
-    if (params?.specialty && params.specialty !== "All Specialties") {
-      searchParams.append("specialty", params.specialty);
-    }
-    if (params?.search) {
-      searchParams.append("search", params.search);
-    }
-
-    const queryString = searchParams.toString();
-    const endpoint = `/doctors${queryString ? `?${queryString}` : ""}`;
-
-    console.log("👩‍⚕️ Fetching doctors:", endpoint);
-    return apiRequest<any[]>(endpoint);
-  },
-
-  getDoctor: async (id: string) => {
-    console.log("👨‍⚕️ Fetching doctor:", id);
-    return apiRequest<any>(`/doctors/${id}`);
-  },
-
-  getDoctorAvailability: async (doctorId: string, date: string) => {
-    console.log("📅 Fetching availability for doctor:", doctorId, "on", date);
-    return apiRequest<{ date: string; availableSlots: string[] }>(
-      `/doctors/${doctorId}/availability?date=${date}`
-    );
-  },
-
-  // Appointments endpoints
+  // Protected endpoints
   getPatientAppointments: async (params?: {
     page?: number;
     limit?: number;
@@ -201,8 +217,35 @@ export const api = {
       queryString ? `?${queryString}` : ""
     }`;
 
-    console.log("📋 Fetching patient appointments:", endpoint);
+    console.log("📋 API: Fetching patient appointments");
     return apiRequest<{ items: any[]; meta: any }>(endpoint);
+  },
+
+  getProfile: async () => {
+    console.log("👤 API: Fetching patient profile");
+    return apiRequest<any>("/patients/profile");
+  },
+
+  // Public endpoints
+  getDoctors: async (params?: { specialty?: string; search?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.specialty && params.specialty !== "All Specialties") {
+      searchParams.append("specialty", params.specialty);
+    }
+    if (params?.search) {
+      searchParams.append("search", params.search);
+    }
+
+    const queryString = searchParams.toString();
+    console.log("👩‍⚕️ API: Fetching doctors");
+    return apiRequest<any[]>(`/doctors${queryString ? `?${queryString}` : ""}`);
+  },
+
+  getDoctorAvailability: async (doctorId: string, date: string) => {
+    console.log("📅 API: Fetching doctor availability");
+    return apiRequest<{ date: string; availableSlots: string[] }>(
+      `/doctors/${doctorId}/availability?date=${date}`
+    );
   },
 
   createAppointment: async (appointment: {
@@ -213,7 +256,7 @@ export const api = {
     title: string;
     description?: string;
   }) => {
-    console.log("➕ Creating appointment:", appointment);
+    console.log("➕ API: Creating appointment");
     return apiRequest<any>("/appointments", {
       method: "POST",
       body: JSON.stringify(appointment),
@@ -221,7 +264,7 @@ export const api = {
   },
 
   updateAppointment: async (id: string, updates: Partial<any>) => {
-    console.log("✏️ Updating appointment:", id, updates);
+    console.log("✏️ API: Updating appointment");
     return apiRequest<any>(`/appointments/${id}`, {
       method: "PATCH",
       body: JSON.stringify(updates),
@@ -229,37 +272,14 @@ export const api = {
   },
 
   cancelAppointment: async (id: string) => {
-    console.log("❌ Cancelling appointment:", id);
+    console.log("❌ API: Cancelling appointment");
     return apiRequest<any>(`/appointments/${id}`, {
       method: "DELETE",
     });
   },
 
-  // Health Records endpoints
-  getHealthRecords: async (params?: { category?: string; search?: string }) => {
-    const searchParams = new URLSearchParams();
-    if (params?.category && params.category !== "All") {
-      searchParams.append("category", params.category);
-    }
-    if (params?.search) {
-      searchParams.append("search", params.search);
-    }
-
-    const queryString = searchParams.toString();
-    const endpoint = `/patients/records${queryString ? `?${queryString}` : ""}`;
-
-    console.log("📄 Fetching health records:", endpoint);
-    return apiRequest<any[]>(endpoint);
-  },
-
-  // Profile endpoints
-  getProfile: async () => {
-    console.log("👤 Fetching patient profile");
-    return apiRequest<any>("/patients/profile");
-  },
-
   updateProfile: async (updates: Partial<any>) => {
-    console.log("✏️ Updating patient profile:", updates);
+    console.log("✏️ API: Updating profile");
     return apiRequest<any>("/patients/profile", {
       method: "PATCH",
       body: JSON.stringify(updates),
@@ -268,41 +288,49 @@ export const api = {
 
   // Utility functions
   logout: () => {
-    console.log("🚪 Logging out - clearing token");
+    console.log("🚪 API: Clearing token");
     localStorage.removeItem("patient-token");
   },
 
   isAuthenticated: () => {
-    const token = localStorage.getItem("patient-token");
-    const isAuth = !!token;
-    console.log("🔍 Checking authentication:", isAuth);
-    return isAuth;
+    const hasToken = !!localStorage.getItem("patient-token");
+    console.log("🔍 API: Checking authentication:", hasToken);
+    return hasToken;
   },
 
-  getStoredToken: () => {
+  // Add to the api object
+  sendChatMessage: async (message: string) => {
+    console.log("💬 Sending chat message:", message);
+    return apiRequest<{ message: string; suggestions?: string[]; data?: any }>(
+      "/chat/message",
+      {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      }
+    );
+  },
+
+  // Debug function
+  debugToken: () => {
     const token = localStorage.getItem("patient-token");
-    console.log("🎫 Getting stored token:", token ? "Present" : "Missing");
+    console.log("🔧 Debug token:", {
+      exists: !!token,
+      length: token?.length,
+      preview: token ? `${token.substring(0, 20)}...` : null,
+    });
     return token;
-  },
-
-  // Debug function to test token
-  testToken: async () => {
-    console.log("🧪 Testing token validity");
-    try {
-      const profile = await api.getProfile();
-      console.log("✅ Token is valid:", profile);
-      return true;
-    } catch (error) {
-      console.error("❌ Token is invalid:", error);
-      return false;
-    }
   },
 };
 
 export { ApiError };
 
-// Debug helper for development
+// Make API available in browser console for debugging
 if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   (window as any).api = api;
-  console.log("🔧 API client available as window.api for debugging");
+  (window as any).debugAuth = () => {
+    console.log("🔧 Auth Debug Info:");
+    console.log("Token exists:", !!localStorage.getItem("patient-token"));
+    console.log("Token value:", localStorage.getItem("patient-token"));
+    api.debugToken();
+  };
 }
