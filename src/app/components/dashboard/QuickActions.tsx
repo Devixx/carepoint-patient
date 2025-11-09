@@ -35,26 +35,26 @@ const actions = [
 
 export function QuickActions() {
   return (
-    <div className="card p-6">
-      <h3 className="text-lg font-semibold text-text-primary mb-4">
+    <div className="card p-4 sm:p-5 lg:p-6">
+      <h3 className="text-base sm:text-lg font-semibold text-text-primary mb-3 sm:mb-4">
         Quick Actions
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5 sm:gap-3 lg:gap-4">
         {actions.map((action) => (
           <Link
             key={action.name}
             href={action.href}
-            className="group p-4 rounded-lg border border-border hover:border-gray-300 hover:bg-surface-accent transition-all duration-200 focus-ring"
+            className="group p-3 sm:p-4 rounded-lg border border-border hover:border-gray-300 hover:bg-surface-accent transition-all duration-200 focus-ring"
           >
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-10 h-10 bg-brand-blue/10 rounded-lg flex items-center justify-center group-hover:bg-brand-blue/20 transition-colors">
-                <action.icon className="w-5 h-5 text-brand-blue" />
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 bg-brand-blue/10 rounded-lg flex items-center justify-center group-hover:bg-brand-blue/20 transition-colors">
+                <action.icon className="w-4 h-4 sm:w-4.5 sm:h-4.5 lg:w-5 lg:h-5 text-brand-blue" />
               </div>
               <div className="min-w-0">
-                <h4 className="text-sm font-medium text-text-primary group-hover:text-brand-blue">
+                <h4 className="text-xs sm:text-sm font-medium text-text-primary group-hover:text-brand-blue truncate">
                   {action.name}
                 </h4>
-                <p className="text-xs text-text-subtle mt-1">
+                <p className="text-[10px] sm:text-xs text-text-subtle mt-0.5 sm:mt-1 line-clamp-2">
                   {action.description}
                 </p>
               </div>

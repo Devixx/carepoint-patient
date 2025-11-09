@@ -129,16 +129,16 @@ export default function ChatWidget() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50"
+        className="fixed bottom-20 sm:bottom-24 lg:bottom-6 right-4 sm:right-6 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50"
         aria-label="Open chat"
       >
-        <ChatBubbleLeftRightIcon className="h-8 w-8 text-white" />
+        <ChatBubbleLeftRightIcon className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50">
+    <div className="fixed bottom-20 sm:bottom-24 lg:bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 max-w-md h-[400px] sm:h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50">
       {/* Chat Header */}
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-t-2xl">
         <div className="flex items-center gap-3">

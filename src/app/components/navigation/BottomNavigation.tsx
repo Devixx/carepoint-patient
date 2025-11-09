@@ -49,8 +49,8 @@ export default function BottomNavigation() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border lg:hidden">
-      <div className="grid grid-cols-5 h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 lg:hidden safe-area-bottom">
+      <div className="grid grid-cols-5 h-14 sm:h-16">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           const Icon = isActive ? item.activeIcon : item.icon;
@@ -63,8 +63,8 @@ export default function BottomNavigation() {
                 isActive ? "nav-item-active" : "nav-item-inactive"
               }`}
             >
-              <Icon className="h-6 w-6" />
-              <span className="text-xs font-medium">{item.name}</span>
+              <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-[10px] xs:text-xs font-medium truncate px-1">{item.name}</span>
             </Link>
           );
         })}

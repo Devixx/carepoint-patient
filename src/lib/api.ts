@@ -241,11 +241,26 @@ export const api = {
     return apiRequest<any[]>(`/doctors${queryString ? `?${queryString}` : ""}`);
   },
 
+  getDoctor: async (doctorId: string) => {
+    console.log("👨‍⚕️ API: Fetching doctor profile");
+    return apiRequest<any>(`/doctors/${doctorId}`);
+  },
+
   getDoctorAvailability: async (doctorId: string, date: string) => {
-    console.log("📅 API: Fetching doctor availability");
-    return apiRequest<{ date: string; availableSlots: string[] }>(
+    console.log("📅 API: Fetching doctor availability", {
+      doctorId,
+      date,
+      fullUrl: `${API_BASE_URL}/doctors/${doctorId}/availability?date=${date}`
+    });
+    const result = await apiRequest<{ date: string; availableSlots: string[] }>(
       `/doctors/${doctorId}/availability?date=${date}`
     );
+    console.log("📅 API: Availability response:", {
+      date: result.date,
+      slotsCount: result.availableSlots?.length,
+      slots: result.availableSlots
+    });
+    return result;
   },
 
   createAppointment: async (appointment: {

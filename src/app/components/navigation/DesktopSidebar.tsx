@@ -37,26 +37,26 @@ export default function DesktopSidebar() {
 
         {/* Patient Info */}
         {patient && (
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
+          <div className="px-4 xl:px-6 py-3 xl:py-4 border-b border-slate-200 bg-slate-50">
+            <div className="flex items-center gap-2 xl:gap-3">
+              <div className="flex-shrink-0 w-9 h-9 xl:w-10 xl:h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium text-xs xl:text-sm">
                   {patient.firstName[0]}
                   {patient.lastName[0]}
                 </span>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-slate-900">
+              <div className="min-w-0">
+                <p className="text-xs xl:text-sm font-medium text-slate-900 truncate">
                   {patient.firstName} {patient.lastName}
                 </p>
-                <p className="text-xs text-slate-500">Patient Portal</p>
+                <p className="text-[10px] xl:text-xs text-slate-500">Patient Portal</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="flex-1 px-3 xl:px-4 py-4 xl:py-6 space-y-0.5 xl:space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
 
@@ -64,28 +64,28 @@ export default function DesktopSidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                className={`flex items-center px-2 xl:px-3 py-2 xl:py-2.5 text-xs xl:text-sm font-medium rounded-lg transition-colors duration-200 ${
                   isActive
-                    ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 ml-0 pl-2"
+                    ? "bg-blue-50 text-blue-700 border-l-4 border-blue-600 ml-0 pl-1 xl:pl-2"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
-                {item.name}
+                <item.icon className="flex-shrink-0 w-4 h-4 xl:w-5 xl:h-5 mr-2 xl:mr-3" />
+                <span className="truncate">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-slate-200">
+        <div className="px-3 xl:px-4 py-3 xl:py-4 border-t border-slate-200">
           <button
             onClick={logout}
-            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors duration-200"
+            className="w-full text-left px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors duration-200"
           >
             Sign Out
           </button>
-          <p className="mt-2 px-3 text-xs text-slate-400">
+          <p className="mt-1.5 xl:mt-2 px-2 xl:px-3 text-[10px] xl:text-xs text-slate-400">
             CarePoint Patient v1.0
           </p>
         </div>

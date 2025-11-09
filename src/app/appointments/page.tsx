@@ -326,7 +326,7 @@ function AppointmentCard({
       {showActions && (
         <div className="flex gap-3">
           <Button size="sm">
-            {isVideo ? "Join Video Call" : "Get Directions"}
+            {isVideo ? "Video Call" : "Directions"}
           </Button>
           <Button
             variant="outline"
