@@ -36,6 +36,18 @@ const specialties = [
   "Psychiatry",
 ];
 
+const luxembourgCities = [
+  { name: "All Cities", lat: 0, lng: 0 },
+  { name: "Luxembourg City", lat: 49.6116, lng: 6.1319 },
+  { name: "Esch-sur-Alzette", lat: 49.4958, lng: 5.9806 },
+  { name: "Differdange", lat: 49.5244, lng: 5.8910 },
+  { name: "Ettelbruck", lat: 49.8472, lng: 6.1042 },
+  { name: "Strassen", lat: 49.6205, lng: 6.0749 },
+  { name: "Kirchberg", lat: 49.6319, lng: 6.1750 },
+  { name: "Dudelange", lat: 49.4803, lng: 6.0874 },
+  { name: "Pétange", lat: 49.5581, lng: 5.8819 },
+];
+
 export default function FindCarePage() {
   const [selectedSpecialty, setSelectedSpecialty] = useState("All Specialties");
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,15 +59,83 @@ export default function FindCarePage() {
     availableOnly: false,
   });
 
+  // Location state
+  const [locationMode, setLocationMode] = useState<'none' | 'gps' | 'city'>('none');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedCity, setSelectedCity] = useState("");
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Build query params for useDoctors
+  const doctorParams: any = {
+    specialty: selectedSpecialty,
+    search: searchQuery,
+  };
+  if (locationMode === 'gps' && userLocation) {
+    doctorParams.lat = userLocation.lat;
+    doctorParams.lng = userLocation.lng;
+    doctorParams.radius = 50;
+  } else if (locationMode === 'city' && selectedCity) {
+    doctorParams.city = selectedCity;
+  }
+
   const {
     data: doctors = [],
     isLoading,
     isError,
     error,
-  } = useDoctors({
-    specialty: selectedSpecialty,
-    search: searchQuery,
-  });
+  } = useDoctors(doctorParams);
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setLocationMode('gps');
+        setSelectedCity("");
+        setLocationLoading(false);
+      },
+      (err) => {
+        setLocationError(
+          err.code === 1
+            ? "Location access denied. Please use city filter instead."
+            : "Could not get your location. Please try the city filter."
+        );
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleCityChange = (cityName: string) => {
+    if (cityName === "All Cities" || cityName === "") {
+      setSelectedCity("");
+      setLocationMode('none');
+      setUserLocation(null);
+    } else {
+      setSelectedCity(cityName);
+      setLocationMode('city');
+      setUserLocation(null);
+    }
+    setLocationError(null);
+  };
+
+  const clearLocation = () => {
+    setLocationMode('none');
+    setUserLocation(null);
+    setSelectedCity("");
+    setLocationError(null);
+  };
 
   // Fetch patient's appointments to identify their medical team
   const { data: appointmentsData } = usePatientAppointments();
@@ -96,6 +176,9 @@ export default function FindCarePage() {
   } : 'no doctors');
 
   // Categorize and sort doctors
+  // When location mode is active, respect the backend's distance-based ordering
+  const isLocationActive = locationMode !== 'none';
+
   const categorizedDoctors = doctors.reduce((acc: { myTeam: any[], recommended: any[], others: any[] }, doctor: any) => {
     // Check multiple possible ID fields
     const doctorId = doctor.id || doctor.userId;
@@ -118,11 +201,15 @@ export default function FindCarePage() {
     others: categorizedDoctors.others.length
   });
 
-  const sortedDoctors = [
-    ...categorizedDoctors.myTeam,
-    ...categorizedDoctors.recommended,
-    ...categorizedDoctors.others
-  ];
+  // When location is active, use the API order (sorted by distance);
+  // otherwise, pin myTeam to top
+  const sortedDoctors = isLocationActive
+    ? doctors
+    : [
+        ...categorizedDoctors.myTeam,
+        ...categorizedDoctors.recommended,
+        ...categorizedDoctors.others,
+      ];
 
   if (isLoading) {
     return (
@@ -174,6 +261,88 @@ export default function FindCarePage() {
               <p className="text-blue-100 text-sm sm:text-base lg:text-lg">
                 Discover healthcare professionals near you
               </p>
+            </div>
+
+            {/* Location Bar */}
+            <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg border border-slate-100">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 flex-shrink-0">
+                  <MapPinIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  <span>Location</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                  {/* Use My Location Button */}
+                  <button
+                    onClick={handleUseMyLocation}
+                    disabled={locationLoading}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg border-2 transition-all ${
+                      locationMode === 'gps'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
+                        : 'border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/50'
+                    }`}
+                  >
+                    {locationLoading ? (
+                      <svg className="animate-spin h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                    ) : (
+                      <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                      </svg>
+                    )}
+                    <span className="hidden xs:inline">{locationLoading ? 'Getting location...' : 'Use My Location'}</span>
+                    <span className="xs:hidden">{locationLoading ? 'Loading...' : 'My Location'}</span>
+                  </button>
+
+                  <span className="text-slate-300 hidden sm:inline">or</span>
+
+                  {/* City Dropdown */}
+                  <select
+                    value={selectedCity || "All Cities"}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    className={`px-3 py-1.5 sm:py-2 text-xs sm:text-sm border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all ${
+                      locationMode === 'city'
+                        ? 'border-blue-500 text-blue-700 font-medium'
+                        : 'border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {luxembourgCities.map((city) => (
+                      <option key={city.name} value={city.name}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Active Location Badge */}
+                  {locationMode !== 'none' && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs sm:text-sm text-emerald-700 font-medium">
+                      <MapPinIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      <span className="truncate max-w-[150px]">
+                        {locationMode === 'gps' ? 'Near you' : selectedCity}
+                      </span>
+                      <button
+                        onClick={clearLocation}
+                        className="ml-0.5 hover:text-emerald-900 transition-colors"
+                      >
+                        <XMarkIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Location Error */}
+              {locationError && (
+                <div className="mt-2 flex items-center gap-1.5 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                  <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  <span>{locationError}</span>
+                </div>
+              )}
             </div>
 
             {/* Search & Filters */}
@@ -338,70 +507,98 @@ export default function FindCarePage() {
                 </div>
               </div>
 
-              {/* My Medical Team Section */}
-              {categorizedDoctors.myTeam.length > 0 && (
+              {/* When location is active: single list sorted by distance */}
+              {isLocationActive && sortedDoctors.length > 0 && (
                 <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900">
-                      My Medical Team
+                      {locationMode === 'gps' ? 'Doctors Near You' : `Doctors in ${selectedCity}`}
                     </h3>
                     <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full border border-blue-200">
-                      {categorizedDoctors.myTeam.length}
+                      {sortedDoctors.length}
                     </span>
                   </div>
                   <div className={viewMode === 'card' ? "grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6" : "space-y-3 sm:space-y-4"}>
-                    {categorizedDoctors.myTeam.map((doctor) => (
+                    {sortedDoctors.map((doctor) => (
                       viewMode === 'card' ? (
-                        <DoctorCard key={doctor.id} doctor={doctor} badge="myTeam" />
+                        <DoctorCard key={doctor.id} doctor={doctor} badge={myDoctorIds.has(doctor.id) ? "myTeam" : undefined} />
                       ) : (
-                        <DoctorListItem key={doctor.id} doctor={doctor} badge="myTeam" />
+                        <DoctorListItem key={doctor.id} doctor={doctor} badge={myDoctorIds.has(doctor.id) ? "myTeam" : undefined} />
                       )
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Recommended Section */}
-              {categorizedDoctors.recommended.length > 0 && (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900">
-                      Recommended for You
-                    </h3>
-                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-full border border-emerald-200">
-                      {categorizedDoctors.recommended.length}
-                    </span>
-                  </div>
-                  <div className={viewMode === 'card' ? "grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6" : "space-y-3 sm:space-y-4"}>
-                    {categorizedDoctors.recommended.map((doctor) => (
-                      viewMode === 'card' ? (
-                        <DoctorCard key={doctor.id} doctor={doctor} badge="recommended" />
-                      ) : (
-                        <DoctorListItem key={doctor.id} doctor={doctor} badge="recommended" />
-                      )
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Other Doctors Section */}
-              {categorizedDoctors.others.length > 0 && (
-                <div className="space-y-3 sm:space-y-4">
-                  {(categorizedDoctors.myTeam.length > 0 || categorizedDoctors.recommended.length > 0) && (
-                    <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900">
-                      Other Doctors
-                    </h3>
+              {/* When no location filter: categorized sections */}
+              {!isLocationActive && (
+                <>
+                  {/* My Medical Team Section */}
+                  {categorizedDoctors.myTeam.length > 0 && (
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900">
+                          My Medical Team
+                        </h3>
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full border border-blue-200">
+                          {categorizedDoctors.myTeam.length}
+                        </span>
+                      </div>
+                      <div className={viewMode === 'card' ? "grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6" : "space-y-3 sm:space-y-4"}>
+                        {categorizedDoctors.myTeam.map((doctor) => (
+                          viewMode === 'card' ? (
+                            <DoctorCard key={doctor.id} doctor={doctor} badge="myTeam" />
+                          ) : (
+                            <DoctorListItem key={doctor.id} doctor={doctor} badge="myTeam" />
+                          )
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  <div className={viewMode === 'card' ? "grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6" : "space-y-3 sm:space-y-4"}>
-                    {categorizedDoctors.others.map((doctor) => (
-                      viewMode === 'card' ? (
-                        <DoctorCard key={doctor.id} doctor={doctor} />
-                      ) : (
-                        <DoctorListItem key={doctor.id} doctor={doctor} />
-                      )
-                    ))}
-                  </div>
-                </div>
+
+                  {/* Recommended Section */}
+                  {categorizedDoctors.recommended.length > 0 && (
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900">
+                          Recommended for You
+                        </h3>
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-full border border-emerald-200">
+                          {categorizedDoctors.recommended.length}
+                        </span>
+                      </div>
+                      <div className={viewMode === 'card' ? "grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6" : "space-y-3 sm:space-y-4"}>
+                        {categorizedDoctors.recommended.map((doctor) => (
+                          viewMode === 'card' ? (
+                            <DoctorCard key={doctor.id} doctor={doctor} badge="recommended" />
+                          ) : (
+                            <DoctorListItem key={doctor.id} doctor={doctor} badge="recommended" />
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other Doctors Section */}
+                  {categorizedDoctors.others.length > 0 && (
+                    <div className="space-y-3 sm:space-y-4">
+                      {(categorizedDoctors.myTeam.length > 0 || categorizedDoctors.recommended.length > 0) && (
+                        <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900">
+                          Other Doctors
+                        </h3>
+                      )}
+                      <div className={viewMode === 'card' ? "grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6" : "space-y-3 sm:space-y-4"}>
+                        {categorizedDoctors.others.map((doctor) => (
+                          viewMode === 'card' ? (
+                            <DoctorCard key={doctor.id} doctor={doctor} />
+                          ) : (
+                            <DoctorListItem key={doctor.id} doctor={doctor} />
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {sortedDoctors.length === 0 && (
@@ -636,9 +833,21 @@ function DoctorCard({ doctor, badge }: { doctor: any; badge?: 'myTeam' | 'recomm
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-600 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
               <MapPinIcon className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500 flex-shrink-0" />
-              <span className="font-medium truncate text-[10px] sm:text-xs lg:text-sm">CarePoint</span>
+              <span className="font-medium truncate text-[10px] sm:text-xs lg:text-sm">{doctor.city || "CarePoint"}</span>
             </div>
           </div>
+
+          {/* Distance Badge */}
+          {doctor.distance != null && (
+            <div className="mb-3 sm:mb-4">
+              <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+                <MapPinIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600" />
+                <span className="text-[10px] sm:text-xs font-bold text-blue-700">
+                  {doctor.distance < 1 ? `${Math.round(doctor.distance * 1000)}m away` : `${doctor.distance} km away`}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Next Vacation Badge */}
           {nextVacation && (
@@ -843,8 +1052,14 @@ function DoctorListItem({ doctor, badge }: { doctor: any; badge?: 'myTeam' | 're
             </div>
             <div className="flex items-center gap-1 sm:gap-1.5">
               <MapPinIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-slate-400 flex-shrink-0" />
-              <span>CarePoint</span>
+              <span>{doctor.city || "CarePoint"}</span>
             </div>
+            {doctor.distance != null && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-full text-blue-700 font-bold">
+                <MapPinIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span>{doctor.distance < 1 ? `${Math.round(doctor.distance * 1000)}m` : `${doctor.distance} km`}</span>
+              </div>
+            )}
             {nextVacation && (
               <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[9px] sm:text-[10px] font-medium ${
                 doctorOnVacation 

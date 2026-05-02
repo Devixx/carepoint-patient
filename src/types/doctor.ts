@@ -16,6 +16,9 @@ export interface Doctor {
   city?: string;
   zipCode?: string;
   country?: string;
+  latitude?: number;
+  longitude?: number;
+  distance?: number | null; // km, computed by backend when using location search
   isActive: boolean;
   workingHours?: Record<string, any>;
   appointmentSettings?: Record<string, any>;

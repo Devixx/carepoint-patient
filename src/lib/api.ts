@@ -227,13 +227,30 @@ export const api = {
   },
 
   // Public endpoints
-  getDoctors: async (params?: { specialty?: string; search?: string }) => {
+  getDoctors: async (params?: {
+    specialty?: string;
+    search?: string;
+    lat?: number;
+    lng?: number;
+    radius?: number;
+    city?: string;
+  }) => {
     const searchParams = new URLSearchParams();
     if (params?.specialty && params.specialty !== "All Specialties") {
       searchParams.append("specialty", params.specialty);
     }
     if (params?.search) {
       searchParams.append("search", params.search);
+    }
+    if (params?.lat != null && params?.lng != null) {
+      searchParams.append("lat", params.lat.toString());
+      searchParams.append("lng", params.lng.toString());
+      if (params?.radius) {
+        searchParams.append("radius", params.radius.toString());
+      }
+    }
+    if (params?.city) {
+      searchParams.append("city", params.city);
     }
 
     const queryString = searchParams.toString();

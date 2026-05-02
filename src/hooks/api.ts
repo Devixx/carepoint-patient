@@ -3,7 +3,14 @@ import { api, ApiError } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
 // Doctors
-export function useDoctors(params?: { specialty?: string; search?: string }) {
+export function useDoctors(params?: {
+  specialty?: string;
+  search?: string;
+  lat?: number;
+  lng?: number;
+  radius?: number;
+  city?: string;
+}) {
   return useQuery({
     queryKey: ["doctors", params],
     queryFn: () => api.getDoctors(params),
@@ -48,6 +55,7 @@ export function useCreateAppointment() {
     mutationFn: api.createAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["doctor-availability"] });
       toast.success("Appointment booked successfully!");
     },
     onError: (error: ApiError) => {
@@ -79,6 +87,7 @@ export function useCancelAppointment() {
     mutationFn: api.cancelAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["doctor-availability"] });
       toast.success("Appointment cancelled successfully!");
     },
     onError: (error: ApiError) => {
