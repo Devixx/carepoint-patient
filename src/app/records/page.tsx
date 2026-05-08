@@ -117,6 +117,7 @@ const categories = [
 export default function HealthRecordsPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
 
   const filteredRecords = mockRecords.filter((record) => {
     const matchesCategory =
@@ -159,7 +160,13 @@ export default function HealthRecordsPage() {
                       You have {urgentRecords.length} record(s) that need your
                       attention
                     </p>
-                    <Button size="sm" className="bg-red-600 hover:bg-red-700">
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={() =>
+                        setExpandedRecordId(urgentRecords[0]?.id ?? null)
+                      }
+                    >
                       View Details
                     </Button>
                   </div>
@@ -276,12 +283,52 @@ export default function HealthRecordsPage() {
                               variant="ghost"
                               size="sm"
                               rightIcon={
-                                <ChevronRightIcon className="h-4 w-4" />
+                                <ChevronRightIcon
+                                  className={`h-4 w-4 transition-transform duration-200 ${
+                                    expandedRecordId === record.id ? "rotate-90" : ""
+                                  }`}
+                                />
+                              }
+                              onClick={() =>
+                                setExpandedRecordId(
+                                  expandedRecordId === record.id ? null : record.id
+                                )
                               }
                             >
-                              View Details
+                              {expandedRecordId === record.id ? "Hide Details" : "View Details"}
                             </Button>
                           </div>
+
+                          {expandedRecordId === record.id && (
+                            <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 text-sm text-slate-700">
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Category</span>
+                                <span className="font-medium">{record.category}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Provider</span>
+                                <span className="font-medium">{record.provider}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Status</span>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${status.className}`}>
+                                  {status.label}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-500">Attachment</span>
+                                <span className="font-medium">
+                                  {record.hasAttachment ? "Available" : "None"}
+                                </span>
+                              </div>
+                              <div className="pt-2">
+                                <span className="text-slate-500">Notes</span>
+                                <p className="mt-1 text-slate-800 bg-slate-50 rounded-lg p-3">
+                                  {record.summary}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

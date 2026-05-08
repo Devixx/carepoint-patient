@@ -214,7 +214,7 @@ export default function NewAppointmentPage() {
     if (!selectedType) return;
 
     const startTime = new Date(
-      `${bookingData.date}T${bookingData.time}:00.000Z`
+      `${bookingData.date}T${bookingData.time}:00`
     );
     const endTime = new Date(
       startTime.getTime() + selectedType.duration * 60000
