@@ -6,6 +6,7 @@ import {
   HomeIcon,
   MagnifyingGlassIcon,
   CalendarIcon,
+  CalendarDaysIcon,
   DocumentTextIcon,
   UserIcon,
   HeartIcon,
@@ -16,6 +17,7 @@ const navigation = [
   { name: "Home", href: "/", icon: HomeIcon },
   { name: "Find Care", href: "/find-care", icon: MagnifyingGlassIcon },
   { name: "Appointments", href: "/appointments", icon: CalendarIcon },
+  { name: "Calendar", href: "/calendar", icon: CalendarDaysIcon },
   { name: "Health Records", href: "/records", icon: DocumentTextIcon },
   { name: "Profile", href: "/profile", icon: UserIcon },
 ];

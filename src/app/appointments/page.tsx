@@ -285,8 +285,16 @@ function AppointmentCard({
         <div className="flex items-center gap-3">
           <span
             className={`px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}
+            title={
+              appointment.status === "no_show"
+                ? "You were marked as not present at this appointment. Please contact your provider if this is incorrect."
+                : undefined
+            }
           >
             {status.label}
+            {appointment.status === "no_show" && (
+              <span className="ml-1 opacity-70 cursor-help">ⓘ</span>
+            )}
           </span>
           {isVideo && (
             <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 rounded-full">

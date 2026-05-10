@@ -433,107 +433,154 @@ export default function NewAppointmentPage() {
 
                 {currentStep === "datetime" && (
                   <div className="space-y-4 sm:space-y-6">
-                    {/* Calendar Day Navigation */}
-                    <div className="bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-100">
-                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    {/* Month Calendar */}
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      {/* Month navigator */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
                         <button
-                          onClick={() => changeDay('prev')}
-                          disabled={isViewingToday()}
-                          className="p-1.5 sm:p-2 rounded-lg hover:bg-white/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          title="Previous day"
-                        >
-                          <ChevronLeftIcon className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
-                        </button>
-                        
-                        <div className="text-center min-w-0 px-2">
-                          <h3 className="text-sm sm:text-base lg:text-xl font-bold text-slate-900 truncate">
-                            {formatDisplayDate(viewingDate)}
-                          </h3>
-                          <p className="text-xs sm:text-sm text-slate-600">
-                            {availability?.availableSlots?.length || 0} slots
-                          </p>
-                        </div>
-                        
-                        <button
-                          onClick={() => changeDay('next')}
-                          className="p-1.5 sm:p-2 rounded-lg hover:bg-white/50 transition-colors"
-                          title="Next day"
-                        >
-                          <ChevronRightIcon className="h-5 w-5 sm:h-6 sm:w-6 text-slate-700" />
-                        </button>
-                      </div>
-                      
-                      {/* Manual Date Picker */}
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 flex-shrink-0" />
-                        <input
-                          type="date"
-                          value={viewingDate}
-                          onChange={(e) => {
-                            setViewingDate(e.target.value);
-                            setBookingData({
-                              ...bookingData,
-                              date: "",
-                              time: "",
-                            });
+                          onClick={() => {
+                            const [y, m] = viewingDate.split("-").map(Number);
+                            const prev = new Date(y, m - 2, 1);
+                            const todayD = new Date();
+                            if (prev.getFullYear() > todayD.getFullYear() ||
+                              (prev.getFullYear() === todayD.getFullYear() && prev.getMonth() >= todayD.getMonth())) {
+                              setViewingDate(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}-01`);
+                              setBookingData({ ...bookingData, date: "", time: "" });
+                            }
                           }}
-                          min={new Date().toISOString().split("T")[0]}
-                          className="flex-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                        />
+                          className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+                        >
+                          <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
+                        </button>
+                        <span className="text-sm font-semibold text-slate-900">
+                          {new Date(viewingDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const [y, m] = viewingDate.split("-").map(Number);
+                            const next = new Date(y, m, 1);
+                            setViewingDate(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`);
+                            setBookingData({ ...bookingData, date: "", time: "" });
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+                        >
+                          <ChevronRightIcon className="h-4 w-4 text-slate-600" />
+                        </button>
                       </div>
+
+                      {/* Day labels */}
+                      <div className="grid grid-cols-7 border-b border-slate-100">
+                        {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
+                          <div key={d} className="py-2 text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase">
+                            {d}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Day grid */}
+                      {(() => {
+                        const [y, m] = viewingDate.split("-").map(Number);
+                        const firstDay = new Date(y, m - 1, 1).getDay();
+                        const daysInMonth = new Date(y, m, 0).getDate();
+                        const todayD = new Date();
+                        todayD.setHours(0, 0, 0, 0);
+                        const cells: (number | null)[] = [];
+                        for (let i = 0; i < firstDay; i++) cells.push(null);
+                        for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+                        while (cells.length % 7 !== 0) cells.push(null);
+
+                        return (
+                          <div className="grid grid-cols-7">
+                            {cells.map((day, idx) => {
+                              if (!day) return <div key={`e-${idx}`} className="h-10 sm:h-12 border-b border-r border-slate-50" />;
+                              const dateKey = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                              const cellDate = new Date(y, m - 1, day);
+                              const isPast = cellDate < todayD;
+                              const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+                              const isDisabled = isPast || isWeekend;
+                              const isSelected = bookingData.date === dateKey;
+                              const isViewing = viewingDate === dateKey;
+                              const isToday = cellDate.getTime() === todayD.getTime();
+
+                              return (
+                                <button
+                                  key={dateKey}
+                                  disabled={isDisabled}
+                                  onClick={() => {
+                                    setViewingDate(dateKey);
+                                    setBookingData({ ...bookingData, date: dateKey, time: "" });
+                                  }}
+                                  className={`h-10 sm:h-12 border-b border-r border-slate-50 flex items-center justify-center transition-colors text-sm
+                                    ${isDisabled ? "text-slate-300 cursor-not-allowed" : ""}
+                                    ${isSelected ? "bg-blue-600 text-white font-bold" : ""}
+                                    ${!isDisabled && !isSelected ? "hover:bg-blue-50 text-slate-700" : ""}
+                                    ${isToday && !isSelected ? "font-bold text-blue-600" : ""}
+                                    ${isViewing && !isSelected ? "ring-2 ring-inset ring-blue-300" : ""}
+                                  `}
+                                >
+                                  {day}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
+
+                    {/* Selected date label + slot count */}
+                    {viewingDate && (
+                      <div className="flex items-center justify-between text-sm px-1">
+                        <span className="font-medium text-slate-700">
+                          {formatDisplayDate(viewingDate)}
+                        </span>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          (availability?.availableSlots?.length || 0) > 0
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-100 text-slate-500"
+                        }`}>
+                          {availability?.availableSlots?.length || 0} slots available
+                        </span>
+                      </div>
+                    )}
 
                     {/* Available Time Slots */}
                     <div>
                       <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-2 sm:mb-3">
                         Select Time Slot
                       </label>
-                      
+
                       {availability && availability.availableSlots.length > 0 ? (
-                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
                           {availability.availableSlots.map((time) => (
                             <button
                               key={time}
-                              onClick={() => {
-                                setBookingData({
-                                  ...bookingData,
-                                  date: viewingDate,
-                                  time: time
-                                });
-                              }}
-                              className={`p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl border-2 text-center transition-all ${
+                              onClick={() => setBookingData({ ...bookingData, date: viewingDate, time })}
+                              className={`py-2.5 px-2 rounded-xl border-2 text-center transition-all ${
                                 bookingData.date === viewingDate && bookingData.time === time
                                   ? "border-blue-500 bg-blue-50 shadow-md"
                                   : "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"
                               }`}
                             >
-                              <div className="text-sm sm:text-base lg:text-lg font-semibold text-slate-900">
+                              <div className="text-sm font-semibold text-slate-900">
                                 {formatTimeSlot(time)}
                               </div>
                               {bookingData.date === viewingDate && bookingData.time === time && (
-                                <div className="flex items-center justify-center mt-0.5 sm:mt-1">
-                                  <CheckIcon className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                                <div className="flex items-center justify-center mt-1">
+                                  <CheckIcon className="h-3.5 w-3.5 text-blue-600" />
                                 </div>
                               )}
                             </button>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-8 sm:py-12 bg-slate-50 rounded-lg sm:rounded-xl border border-slate-200">
-                          <CalendarIcon className="h-8 w-8 sm:h-12 sm:w-12 text-slate-300 mx-auto mb-2 sm:mb-3" />
-                          <p className="text-sm sm:text-base text-slate-600 font-medium px-4">
-                            No available slots for this date
+                        <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200">
+                          <CalendarIcon className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                          <p className="text-sm text-slate-600 font-medium">
+                            {viewingDate ? "No available slots for this date" : "Select a date above"}
                           </p>
-                          <p className="text-xs sm:text-sm text-slate-500 mt-1 sm:mt-2 mb-3 sm:mb-4 px-4">
-                            Try selecting a different day
-                          </p>
-                          <button
-                            onClick={() => changeDay('next')}
-                            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            Check Next Day
-                            <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-                          </button>
+                          {viewingDate && (
+                            <p className="text-xs text-slate-400 mt-1">Try another day in the calendar</p>
+                          )}
                         </div>
                       )}
                     </div>

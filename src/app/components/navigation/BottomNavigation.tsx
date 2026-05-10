@@ -4,15 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   HomeIcon,
-  MagnifyingGlassIcon,
   CalendarIcon,
+  CalendarDaysIcon,
   DocumentTextIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeIconSolid,
-  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
   CalendarIcon as CalendarIconSolid,
+  CalendarDaysIcon as CalendarDaysIconSolid,
   DocumentTextIcon as DocumentTextIconSolid,
   UserIcon as UserIconSolid,
 } from "@heroicons/react/24/solid";
@@ -20,16 +20,16 @@ import {
 const navigation = [
   { name: "Home", href: "/", icon: HomeIcon, activeIcon: HomeIconSolid },
   {
-    name: "Find Care",
-    href: "/find-care",
-    icon: MagnifyingGlassIcon,
-    activeIcon: MagnifyingGlassIconSolid,
-  },
-  {
     name: "Appointments",
     href: "/appointments",
     icon: CalendarIcon,
     activeIcon: CalendarIconSolid,
+  },
+  {
+    name: "Calendar",
+    href: "/calendar",
+    icon: CalendarDaysIcon,
+    activeIcon: CalendarDaysIconSolid,
   },
   {
     name: "Records",
