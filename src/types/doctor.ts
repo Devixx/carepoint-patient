@@ -31,8 +31,11 @@ export interface Doctor {
   };
   vacations?: DoctorVacation[];
   rating?: number;
+  reviewCount?: number;
   featured?: boolean;
+  acceptsCNS?: boolean;
   acceptsVideo?: boolean;
+  workingHoursDisplay?: string;
   education?: string;
   experience?: string;
   licenseNumber?: string;

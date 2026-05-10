@@ -29,8 +29,11 @@ const specialties = [
   "All Specialties",
   "Cardiology",
   "Dermatology",
+  "General Practice",
+  "Gynecology",
   "Internal Medicine",
   "Neurology",
+  "Ophthalmology",
   "Orthopedics",
   "Pediatrics",
   "Psychiatry",
@@ -808,18 +811,27 @@ function DoctorCard({ doctor, badge }: { doctor: any; badge?: 'myTeam' | 'recomm
           </div>
 
           <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-            <div className="flex items-center gap-0.5 sm:gap-1 min-w-0">
-              {[...Array(5)].map((_, i) => (
-                <StarIconSolid
-                  key={i}
-                  className={`h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0 ${
-                    i < Math.floor(4.9) ? "text-yellow-400" : "text-slate-200"
-                  }`}
-                />
-              ))}
-              <span className="text-xs sm:text-sm font-bold text-slate-700 ml-1 sm:ml-2 whitespace-nowrap">
-                4.9 <span className="hidden sm:inline font-normal text-slate-500">(89 reviews)</span>
-              </span>
+            <div className="flex items-center gap-0.5 sm:gap-1 min-w-0 flex-wrap">
+              {doctor.rating != null && (
+                <>
+                  {[...Array(5)].map((_, i) => (
+                    <StarIconSolid
+                      key={i}
+                      className={`h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0 ${
+                        i < Math.round(doctor.rating!) ? "text-yellow-400" : "text-slate-200"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-xs sm:text-sm font-bold text-slate-700 ml-1 sm:ml-2 whitespace-nowrap">
+                    {doctor.rating.toFixed(1)}{doctor.reviewCount != null && <span className="hidden sm:inline font-normal text-slate-500"> ({doctor.reviewCount} reviews)</span>}
+                  </span>
+                </>
+              )}
+              {doctor.acceptsCNS && (
+                <span className="ml-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 text-[10px] sm:text-xs font-semibold rounded-full whitespace-nowrap">
+                  CNS
+                </span>
+              )}
             </div>
             <div className="hidden sm:block">
               <SocialMediaLinks socialMedia={doctor.socialMedia} />
@@ -829,7 +841,7 @@ function DoctorCard({ doctor, badge }: { doctor: any; badge?: 'myTeam' | 'recomm
           <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-600 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
               <ClockIcon className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0" />
-              <span className="font-medium truncate text-[10px] sm:text-xs lg:text-sm">{doctor.workingHours || "9 AM - 5 PM"}</span>
+              <span className="font-medium truncate text-[10px] sm:text-xs lg:text-sm">{doctor.workingHoursDisplay || "9 AM - 5 PM"}</span>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-600 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
               <MapPinIcon className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500 flex-shrink-0" />
@@ -1031,24 +1043,31 @@ function DoctorListItem({ doctor, badge }: { doctor: any; badge?: 'myTeam' | 're
                   <span className="text-[10px] sm:text-xs text-emerald-700 font-medium">Video</span>
                 </div>
               )}
-              <div className="flex items-center gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <StarIconSolid
-                    key={i}
-                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 ${
-                      i < Math.floor(4.9) ? "text-yellow-400" : "text-slate-200"
-                    }`}
-                  />
-                ))}
-                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 ml-0.5 sm:ml-1">4.9</span>
-              </div>
+              {doctor.rating != null && (
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIconSolid
+                      key={i}
+                      className={`h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 ${
+                        i < Math.round(doctor.rating!) ? "text-yellow-400" : "text-slate-200"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-[10px] sm:text-xs font-semibold text-slate-700 ml-0.5 sm:ml-1">{doctor.rating.toFixed(1)}</span>
+                </div>
+              )}
+              {doctor.acceptsCNS && (
+                <span className="px-1.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 text-[9px] sm:text-[10px] font-semibold rounded-full whitespace-nowrap">
+                  CNS
+                </span>
+              )}
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 flex-wrap text-[10px] sm:text-xs text-slate-600 mb-2 sm:mb-3">
             <div className="flex items-center gap-1 sm:gap-1.5">
               <ClockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-slate-400 flex-shrink-0" />
-              <span className="truncate">{doctor.workingHours || "9 AM - 5 PM"}</span>
+              <span className="truncate">{doctor.workingHoursDisplay || "9 AM - 5 PM"}</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-1.5">
               <MapPinIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-slate-400 flex-shrink-0" />

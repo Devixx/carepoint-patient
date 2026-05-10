@@ -143,19 +143,27 @@ export default function DoctorProfilePage() {
                       <p className="text-blue-100 text-xl mb-3">{doctor.specialty}</p>
                       
                       <div className="flex items-center gap-6 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          {[...Array(5)].map((_, i) => (
-                            <StarIconSolid
-                              key={i}
-                              className={`h-5 w-5 ${
-                                i < 5 ? "text-yellow-300" : "text-white/30"
-                              }`}
-                            />
-                          ))}
-                          <span className="ml-2 text-white font-semibold">
-                            4.9 (127 reviews)
-                          </span>
-                        </div>
+                        {doctor.rating != null && (
+                          <div className="flex items-center gap-2">
+                            {[...Array(5)].map((_, i) => (
+                              <StarIconSolid
+                                key={i}
+                                className={`h-5 w-5 ${
+                                  i < Math.round(doctor.rating!) ? "text-yellow-300" : "text-white/30"
+                                }`}
+                              />
+                            ))}
+                            <span className="ml-2 text-white font-semibold">
+                              {doctor.rating.toFixed(1)}{doctor.reviewCount != null && ` (${doctor.reviewCount} reviews)`}
+                            </span>
+                          </div>
+                        )}
+                        {doctor.acceptsCNS && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 rounded-full">
+                            <CheckBadgeIcon className="h-5 w-5" />
+                            <span className="font-medium">Remboursé CNS</span>
+                          </div>
+                        )}
                         
                         {doctor.isActive && (
                           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 rounded-full">
@@ -329,7 +337,7 @@ export default function DoctorProfilePage() {
                       <div>
                         <p className="text-sm text-slate-600">Working Hours</p>
                         <p className="font-semibold text-slate-900">
-                          {doctor.workingHours || "9:00 AM - 5:00 PM"}
+                          {doctor.workingHoursDisplay || "9:00 AM - 5:00 PM"}
                         </p>
                       </div>
                     </div>
