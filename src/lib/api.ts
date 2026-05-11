@@ -342,6 +342,22 @@ export const api = {
     );
   },
 
+  submitReview: async (data: {
+    doctorId: string;
+    appointmentId: string;
+    rating: number;
+    comment?: string;
+  }) => {
+    return apiRequest<any>("/reviews", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  getDoctorReviews: async (doctorId: string) => {
+    return apiRequest<any[]>(`/reviews/doctor/${doctorId}`);
+  },
+
   // Debug function
   debugToken: () => {
     const token = localStorage.getItem("patient-token");

@@ -7,11 +7,13 @@ import {
   MapPinIcon,
   VideoCameraIcon,
   ChatBubbleLeftRightIcon,
+  StarIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "../components/ui/Button";
 import CareLoader from "../components/ui/CareLoader";
 import BottomNavigation from "../components/navigation/BottomNavigation";
 import DesktopSidebar from "../components/navigation/DesktopSidebar";
+import ReviewModal from "../components/reviews/ReviewModal";
 import {
   usePatientAppointments,
   useCancelAppointment,
@@ -47,6 +49,7 @@ const statusConfig = {
 
 export default function AppointmentsPage() {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+  const [reviewTarget, setReviewTarget] = useState<any | null>(null);
 
   const {
     data: appointmentsData,
@@ -115,6 +118,15 @@ export default function AppointmentsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {reviewTarget && (
+        <ReviewModal
+          doctorId={reviewTarget.doctor?.id}
+          doctorName={`${reviewTarget.doctor?.firstName} ${reviewTarget.doctor?.lastName}`}
+          appointmentId={reviewTarget.id}
+          onClose={() => setReviewTarget(null)}
+        />
+      )}
+
       <DesktopSidebar />
 
       <div className="lg:ml-64">
@@ -166,6 +178,7 @@ export default function AppointmentsPage() {
                           showActions
                           onCancel={handleCancel}
                           onReschedule={handleReschedule}
+                          onReview={setReviewTarget}
                         />
                       ))
                     ) : (
@@ -193,6 +206,7 @@ export default function AppointmentsPage() {
                       <AppointmentCard
                         key={appointment.id}
                         appointment={appointment}
+                        onReview={setReviewTarget}
                       />
                     ))}
                   </div>
@@ -236,11 +250,13 @@ function AppointmentCard({
   showActions = false,
   onCancel,
   onReschedule,
+  onReview,
 }: {
   appointment: any;
   showActions?: boolean;
   onCancel?: (id: string) => void;
   onReschedule?: (id: string) => void;
+  onReview?: (appointment: any) => void;
 }) {
   const status = statusConfig[appointment.status as keyof typeof statusConfig];
   const isVideo = appointment.type === "Telehealth";
@@ -349,6 +365,20 @@ function AppointmentCard({
             onClick={() => onCancel?.(appointment.id)}
           >
             Cancel
+          </Button>
+        </div>
+      )}
+
+      {appointment.status === "completed" && onReview && (
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+            onClick={() => onReview(appointment)}
+          >
+            <StarIcon className="h-4 w-4" />
+            Leave a Review
           </Button>
         </div>
       )}

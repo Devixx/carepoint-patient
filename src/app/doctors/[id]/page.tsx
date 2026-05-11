@@ -19,7 +19,7 @@ import { Button } from "../../components/ui/Button";
 import CareLoader from "../../components/ui/CareLoader";
 import BottomNavigation from "../../components/navigation/BottomNavigation";
 import DesktopSidebar from "../../components/navigation/DesktopSidebar";
-import { useDoctor, useDoctorAvailability } from "@/hooks/api";
+import { useDoctor, useDoctorAvailability, useDoctorReviews } from "@/hooks/api";
 import { useState } from "react";
 import { Doctor, getNextVacation, isOnVacation, formatVacationDates } from "@/types/doctor";
 
@@ -29,6 +29,7 @@ export default function DoctorProfilePage() {
   const doctorId = params.id as string;
   
   const { data: doctor, isLoading, isError } = useDoctor(doctorId);
+  const { data: reviews = [] } = useDoctorReviews(doctorId);
   const today = new Date().toISOString().split('T')[0];
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
   
@@ -258,6 +259,46 @@ export default function DoctorProfilePage() {
                         >
                           <LanguageIcon className="h-5 w-5 text-slate-600" />
                           <span className="font-medium text-slate-900">{lang}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Patient Reviews */}
+                {reviews.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-4">
+                      Patient Reviews
+                      <span className="ml-2 text-lg font-normal text-slate-500">({reviews.length})</span>
+                    </h2>
+                    <div className="space-y-4">
+                      {reviews.map((review: any) => (
+                        <div key={review.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-emerald-400 flex items-center justify-center text-white text-xs font-bold">
+                                {review.patient?.firstName?.[0] ?? "P"}
+                              </div>
+                              <span className="font-semibold text-slate-800 text-sm">
+                                {review.patient ? `${review.patient.firstName} ${review.patient.lastName[0]}.` : "Patient"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {[1,2,3,4,5].map((s) => (
+                                <StarIconSolid
+                                  key={s}
+                                  className={`h-4 w-4 ${s <= review.rating ? "text-yellow-400" : "text-slate-200"}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          {review.comment && (
+                            <p className="text-sm text-slate-600 leading-relaxed ml-10">{review.comment}</p>
+                          )}
+                          <p className="text-xs text-slate-400 ml-10 mt-1">
+                            {new Date(review.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                          </p>
                         </div>
                       ))}
                     </div>

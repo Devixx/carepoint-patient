@@ -131,3 +131,30 @@ export function useUpdateProfile() {
     },
   });
 }
+
+// Reviews
+export function useDoctorReviews(doctorId: string) {
+  return useQuery({
+    queryKey: ["doctor-reviews", doctorId],
+    queryFn: () => api.getDoctorReviews(doctorId),
+    enabled: !!doctorId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useSubmitReview() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: api.submitReview,
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["doctor-reviews", variables.doctorId] });
+      queryClient.invalidateQueries({ queryKey: ["doctors"] });
+      queryClient.invalidateQueries({ queryKey: ["doctor", variables.doctorId] });
+      toast.success("Review submitted! Thank you for your feedback.");
+    },
+    onError: (error: ApiError) => {
+      toast.error(error.message || "Failed to submit review");
+    },
+  });
+}
